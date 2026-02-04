@@ -11,7 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import ExpenseItem from "../components/ExpenseItem";
 import TransactionModal from "../components/TransactionModal";
 import { colors } from "../constants/colors";
-import { ExpenseContext } from "../App";
+import { ExpenseContext } from "../context/ExpenseContext";
 
 export default function HomeScreen({ navigation }) {
   const { expenses, deleteExpense } = useContext(ExpenseContext);

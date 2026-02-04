@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
-import { ExpenseContext } from '../App';
+import { ExpenseContext } from '../context/ExpenseContext';
 import TransactionModal from '../components/TransactionModal';
 import { useNavigation } from '@react-navigation/native';
 

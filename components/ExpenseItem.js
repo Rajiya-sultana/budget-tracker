@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import {
   MaterialCommunityIcons,
@@ -6,54 +6,8 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 import { colors } from "../constants/colors";
-
-const CATEGORIES = [
-  {
-    name: "Groceries",
-    icon: "shopping-bag",
-    color: "#22c55e",
-    library: "FontAwesome5",
-  },
-  { name: "Travel", icon: "airplane", color: "#3b82f6", library: "Ionicons" },
-  { name: "Car", icon: "car", color: "#3b82f6", library: "Ionicons" },
-  { name: "Home", icon: "home", color: "#a855f7", library: "Ionicons" },
-  {
-    name: "Insurances",
-    icon: "shield-checkmark",
-    color: "#06b6d4",
-    library: "Ionicons",
-  },
-  { name: "Education", icon: "book", color: "#a855f7", library: "Ionicons" },
-  {
-    name: "Marketing",
-    icon: "megaphone",
-    color: "#f97316",
-    library: "Ionicons",
-  },
-  {
-    name: "Shopping",
-    icon: "bag-handle",
-    color: "#22c55e",
-    library: "Ionicons",
-  },
-  { name: "Internet", icon: "wifi", color: "#8b5cf6", library: "Ionicons" },
-  { name: "Water", icon: "water", color: "#3b82f6", library: "Ionicons" },
-  { name: "Rent", icon: "key", color: "#f97316", library: "Ionicons" },
-  {
-    name: "Gym",
-    icon: "dumbbell",
-    color: "#f97316",
-    library: "MaterialCommunityIcons",
-  },
-  {
-    name: "Subscription",
-    icon: "notifications",
-    color: "#8b5cf6",
-    library: "Ionicons",
-  },
-  { name: "Vacation", icon: "beach", color: "#22c55e", library: "Ionicons" },
-  { name: "Other", icon: "apps", color: "#8b5cf6", library: "Ionicons" },
-];
+import { getCategoryData } from "./CategoryIcon";
+import { ExpenseContext } from "../context/ExpenseContext";
 
 export default function ExpenseItem({
   id,
@@ -64,9 +18,9 @@ export default function ExpenseItem({
   category,
   onPress,
 }) {
-  const categoryData =
-    CATEGORIES.find((cat) => cat.name === category) ||
-    CATEGORIES[CATEGORIES.length - 1];
+  const { customCategories } = useContext(ExpenseContext);
+
+  const categoryData = getCategoryData(category, customCategories);
 
   const IconComponent =
     categoryData.library === "MaterialCommunityIcons"
@@ -154,9 +108,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   expenseAmount: {
-    color: "#dc2626",
+    color: colors.expense,
   },
   incomeAmount: {
-    color: "#16a34a",
+    color: colors.income,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,13 +12,14 @@ import {
   ScrollView,
 } from 'react-native';
 import Button from '../components/Button';
-import CategoryIcon, { CATEGORIES } from '../components/CategoryIcon';
+import CategoryIcon, { AddCategoryButton, getCategoriesByType } from '../components/CategoryIcon';
+import AddCategoryModal from '../components/AddCategoryModal';
 import { colors } from '../constants/colors';
-import { ExpenseContext } from '../App';
+import { ExpenseContext } from '../context/ExpenseContext';
 
 export default function AddExpenseScreen({ navigation, route }) {
-  const { addExpense, updateExpense } = useContext(ExpenseContext);
-  
+  const { addExpense, updateExpense, customCategories, addCategory } = useContext(ExpenseContext);
+
   // Check if we're in edit mode
   const editMode = route.params?.editMode || false;
   const transaction = route.params?.transaction || null;
@@ -27,6 +28,33 @@ export default function AddExpenseScreen({ navigation, route }) {
   const [description, setDescription] = useState(editMode ? transaction.title : '');
   const [selectedType, setSelectedType] = useState(editMode ? transaction.type : 'expense');
   const [selectedCategory, setSelectedCategory] = useState(editMode ? transaction.category : '');
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+
+  // Get filtered categories based on selected type
+  const filteredCategories = useMemo(() => {
+    return getCategoriesByType(selectedType, customCategories);
+  }, [selectedType, customCategories]);
+
+  // Reset selected category when switching types if current category is not valid for new type
+  const handleTypeChange = (newType) => {
+    setSelectedType(newType);
+    const validCategories = getCategoriesByType(newType, customCategories);
+    const isCurrentCategoryValid = validCategories.some(cat => cat.name === selectedCategory);
+    if (!isCurrentCategoryValid) {
+      setSelectedCategory('');
+    }
+  };
+
+  const handleAddCategory = (newCategory) => {
+    const success = addCategory(newCategory);
+    if (success) {
+      // Auto-select the newly added category
+      setSelectedCategory(newCategory.name);
+      Alert.alert('Success', `Category "${newCategory.name}" added successfully!`);
+    } else {
+      Alert.alert('Error', 'A category with this name already exists.');
+    }
+  };
 
   const handleSubmit = () => {
     if (!amount || amount.trim() === '') {
@@ -69,7 +97,7 @@ export default function AddExpenseScreen({ navigation, route }) {
       style={styles.container}
     >
       <StatusBar barStyle="dark-content" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -83,7 +111,7 @@ export default function AddExpenseScreen({ navigation, route }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
@@ -94,9 +122,9 @@ export default function AddExpenseScreen({ navigation, route }) {
               style={[
                 styles.toggleButton,
                 styles.toggleLeft,
-                selectedType === 'expense' && styles.toggleActive,
+                selectedType === 'expense' && styles.toggleActiveExpense,
               ]}
-              onPress={() => setSelectedType('expense')}
+              onPress={() => handleTypeChange('expense')}
             >
               <Text
                 style={[
@@ -104,16 +132,16 @@ export default function AddExpenseScreen({ navigation, route }) {
                   selectedType === 'expense' && styles.toggleTextActive,
                 ]}
               >
-                Expenses
+                Expense
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.toggleButton,
                 styles.toggleRight,
-                selectedType === 'income' && styles.toggleActive,
+                selectedType === 'income' && styles.toggleActiveIncome,
               ]}
-              onPress={() => setSelectedType('income')}
+              onPress={() => handleTypeChange('income')}
             >
               <Text
                 style={[
@@ -130,7 +158,7 @@ export default function AddExpenseScreen({ navigation, route }) {
             <Text style={styles.rupeeSymbol}>₹</Text>
             <TextInput
               style={styles.input}
-              placeholder="Amount spent"
+              placeholder="Amount"
               placeholderTextColor="#999"
               keyboardType="numeric"
               value={amount}
@@ -150,14 +178,16 @@ export default function AddExpenseScreen({ navigation, route }) {
           {/* Category Selection */}
           <Text style={styles.sectionTitle}>Select Category</Text>
           <View style={styles.categoriesContainer}>
-            {CATEGORIES.map((cat) => (
+            {filteredCategories.map((cat) => (
               <CategoryIcon
                 key={cat.name}
                 category={cat.name}
+                categoryData={cat}
                 selected={selectedCategory === cat.name}
                 onPress={setSelectedCategory}
               />
             ))}
+            <AddCategoryButton onPress={() => setShowAddCategoryModal(true)} />
           </View>
 
           <View style={{ height: 100 }} />
@@ -165,11 +195,18 @@ export default function AddExpenseScreen({ navigation, route }) {
       </ScrollView>
 
       <View style={styles.buttonContainer}>
-        <Button 
-          title={editMode ? 'Update Transaction' : (selectedType === 'income' ? 'Add Income' : 'Add Expense')} 
-          onPress={handleSubmit} 
+        <Button
+          title={editMode ? 'Update Transaction' : (selectedType === 'income' ? 'Add Income' : 'Add Expense')}
+          onPress={handleSubmit}
         />
       </View>
+
+      {/* Add Category Modal */}
+      <AddCategoryModal
+        visible={showAddCategoryModal}
+        onClose={() => setShowAddCategoryModal(false)}
+        onSave={handleAddCategory}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -242,8 +279,11 @@ const styles = StyleSheet.create({
   toggleRight: {
     marginLeft: 2,
   },
-  toggleActive: {
-    backgroundColor: colors.primary,
+  toggleActiveExpense: {
+    backgroundColor: colors.expense,
+  },
+  toggleActiveIncome: {
+    backgroundColor: colors.income,
   },
   toggleText: {
     fontSize: 16,
@@ -302,7 +342,7 @@ const styles = StyleSheet.create({
   categoriesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
   buttonContainer: {
     paddingHorizontal: 20,
