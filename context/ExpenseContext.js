@@ -1,54 +1,94 @@
-
 import React, { createContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { format, subDays, subMonths } from "date-fns";
 
 const EXPENSES_STORAGE_KEY = "@budget_tracker_expenses";
 const CATEGORIES_STORAGE_KEY = "@budget_tracker_categories";
 
 export const ExpenseContext = createContext();
 
-const sampleExpenses = [
-  {
-    id: "1",
-    title: "Groceries",
-    date: "Today, 3:45 PM",
-    amount: 200,
-    type: "expense",
-    category: "Groceries",
-  },
-  {
-    id: "2",
-    title: "Taxi",
-    date: "Yesterday, 11:00 AM",
-    amount: 150,
-    type: "expense",
-    category: "Travel",
-  },
-  {
-    id: "3",
-    title: "Dinner",
-    date: "Yesterday, 11:00 AM",
-    amount: 550,
-    type: "expense",
-    category: "Home",
-  },
-  {
-    id: "4",
-    title: "Coffee",
-    date: "Yesterday, 11:00 AM",
-    amount: 100,
-    type: "expense",
-    category: "Shopping",
-  },
-  {
-    id: "5",
-    title: "Movies",
-    date: "Today, 2:00 PM",
-    amount: 400,
-    type: "expense",
-    category: "Other",
-  },
-];
+// Generate sample expenses across multiple months for demo
+const generateSampleExpenses = () => {
+  const now = new Date();
+
+  return [
+    // Current month
+    {
+      id: "1",
+      title: "Groceries",
+      date: format(now, "d MMM, h:mm a"),
+      timestamp: now.getTime(),
+      amount: 200,
+      type: "expense",
+      category: "Groceries",
+    },
+    {
+      id: "2",
+      title: "Taxi",
+      date: format(subDays(now, 1), "d MMM, h:mm a"),
+      timestamp: subDays(now, 1).getTime(),
+      amount: 150,
+      type: "expense",
+      category: "Travel",
+    },
+    {
+      id: "3",
+      title: "Salary",
+      date: format(subDays(now, 3), "d MMM, h:mm a"),
+      timestamp: subDays(now, 3).getTime(),
+      amount: 50000,
+      type: "income",
+      category: "Salary",
+    },
+    // Last month
+    {
+      id: "4",
+      title: "Rent",
+      date: format(subMonths(now, 1), "d MMM, h:mm a"),
+      timestamp: subMonths(now, 1).getTime(),
+      amount: 15000,
+      type: "expense",
+      category: "Rent",
+    },
+    {
+      id: "5",
+      title: "Electricity Bill",
+      date: format(subMonths(now, 1), "d MMM, h:mm a"),
+      timestamp: subMonths(now, 1).getTime(),
+      amount: 2500,
+      type: "expense",
+      category: "Home",
+    },
+    {
+      id: "6",
+      title: "Last Month Salary",
+      date: format(subMonths(now, 1), "d MMM, h:mm a"),
+      timestamp: subMonths(now, 1).getTime(),
+      amount: 50000,
+      type: "income",
+      category: "Salary",
+    },
+    // 2 months ago
+    {
+      id: "7",
+      title: "Shopping",
+      date: format(subMonths(now, 2), "d MMM, h:mm a"),
+      timestamp: subMonths(now, 2).getTime(),
+      amount: 5000,
+      type: "expense",
+      category: "Shopping",
+    },
+    {
+      id: "8",
+      title: "Freelance Project",
+      date: format(subMonths(now, 2), "d MMM, h:mm a"),
+      timestamp: subMonths(now, 2).getTime(),
+      amount: 25000,
+      type: "income",
+      category: "Freelance",
+    },
+  ];
+};
 
 export function ExpenseProvider({ children }) {
   const [expenses, setExpenses] = useState([]);
@@ -79,9 +119,16 @@ export function ExpenseProvider({ children }) {
       ]);
 
       if (storedExpenses !== null) {
-        setExpenses(JSON.parse(storedExpenses));
+        const parsed = JSON.parse(storedExpenses);
+        // Add timestamp to old transactions that don't have it
+        const withTimestamps = parsed.map((expense) => ({
+          ...expense,
+          timestamp: expense.timestamp || Date.now(),
+        }));
+        setExpenses(withTimestamps);
       } else {
-        setExpenses(sampleExpenses);
+        // First time user - load sample data
+        setExpenses(generateSampleExpenses());
       }
 
       if (storedCategories !== null) {
@@ -89,7 +136,7 @@ export function ExpenseProvider({ children }) {
       }
     } catch (error) {
       console.error("Error loading data:", error);
-      setExpenses(sampleExpenses);
+      setExpenses(generateSampleExpenses());
     } finally {
       setIsLoading(false);
     }
@@ -112,16 +159,12 @@ export function ExpenseProvider({ children }) {
   };
 
   const addExpense = (title, amount, type, category) => {
+    const now = new Date();
     const newExpense = {
       id: Date.now().toString(),
       title: title,
-      date: new Date().toLocaleString("en-US", {
-        day: "numeric",
-        month: "short",
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      }),
+      date: format(now, "d MMM, h:mm a"),
+      timestamp: now.getTime(),
       amount: parseFloat(amount),
       type: type,
       category: category,
@@ -139,13 +182,7 @@ export function ExpenseProvider({ children }) {
               amount: parseFloat(amount),
               type,
               category,
-              date: new Date().toLocaleString("en-US", {
-                day: "numeric",
-                month: "short",
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              }),
+              date: format(new Date(), "d MMM, h:mm a"),
             }
           : expense
       )

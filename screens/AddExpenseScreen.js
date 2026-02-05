@@ -159,7 +159,7 @@ export default function AddExpenseScreen({ navigation, route }) {
             <TextInput
               style={styles.input}
               placeholder="Amount"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textLight}
               keyboardType="numeric"
               value={amount}
               onChangeText={setAmount}
@@ -169,7 +169,7 @@ export default function AddExpenseScreen({ navigation, route }) {
           <TextInput
             style={styles.descriptionInput}
             placeholder="Description"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textLight}
             value={description}
             onChangeText={setDescription}
             multiline
@@ -229,12 +229,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -256,13 +256,13 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 25,
     padding: 4,
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -288,24 +288,26 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#999',
+    color: colors.textLight,
   },
   toggleTextActive: {
-    color: '#fff',
+    color: colors.textOnPurple,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 18,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   rupeeSymbol: {
     fontSize: 18,
@@ -319,19 +321,21 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   descriptionInput: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 20,
     fontSize: 16,
     color: colors.text,
     minHeight: 100,
     textAlignVertical: 'top',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 2,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   sectionTitle: {
     fontSize: 18,
@@ -349,6 +353,6 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: colors.border,
   },
 });

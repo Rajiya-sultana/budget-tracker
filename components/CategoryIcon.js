@@ -48,12 +48,12 @@ export default function CategoryIcon({ category, selected, onPress, showLabel = 
     >
       <View style={[
         styles.iconCircle,
-        { backgroundColor: selected ? categoryData.color : '#f0f0f0' }
+        { backgroundColor: selected ? categoryData.color : colors.backgroundSecondary }
       ]}>
         <IconComponent
           name={categoryData.icon}
           size={24}
-          color={selected ? '#fff' : categoryData.color}
+          color={selected ? colors.textOnPurple : categoryData.color}
         />
       </View>
       {showLabel && <Text style={styles.categoryLabel} numberOfLines={1}>{category}</Text>}
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   addButtonCircle: {

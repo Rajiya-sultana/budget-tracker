@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   Modal,
   View,
@@ -10,29 +10,15 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
-
-const CATEGORIES = [
-  { name: 'Groceries', icon: 'shopping-bag', color: '#22c55e', library: 'FontAwesome5' },
-  { name: 'Travel', icon: 'airplane', color: '#3b82f6', library: 'Ionicons' },
-  { name: 'Car', icon: 'car', color: '#3b82f6', library: 'Ionicons' },
-  { name: 'Home', icon: 'home', color: '#a855f7', library: 'Ionicons' },
-  { name: 'Insurances', icon: 'shield-checkmark', color: '#06b6d4', library: 'Ionicons' },
-  { name: 'Education', icon: 'book', color: '#a855f7', library: 'Ionicons' },
-  { name: 'Marketing', icon: 'megaphone', color: '#f97316', library: 'Ionicons' },
-  { name: 'Shopping', icon: 'bag-handle', color: '#22c55e', library: 'Ionicons' },
-  { name: 'Internet', icon: 'wifi', color: '#8b5cf6', library: 'Ionicons' },
-  { name: 'Water', icon: 'water', color: '#3b82f6', library: 'Ionicons' },
-  { name: 'Rent', icon: 'key', color: '#f97316', library: 'Ionicons' },
-  { name: 'Gym', icon: 'dumbbell', color: '#f97316', library: 'MaterialCommunityIcons' },
-  { name: 'Subscription', icon: 'notifications', color: '#8b5cf6', library: 'Ionicons' },
-  { name: 'Vacation', icon: 'beach', color: '#22c55e', library: 'Ionicons' },
-  { name: 'Other', icon: 'apps', color: '#8b5cf6', library: 'Ionicons' },
-];
+import { getCategoryData } from './CategoryIcon';
+import { ExpenseContext } from '../context/ExpenseContext';
 
 export default function TransactionModal({ visible, transaction, onClose, onDelete, onEdit }) {
+  const { customCategories } = useContext(ExpenseContext);
+
   if (!transaction) return null;
 
-  const categoryData = CATEGORIES.find(cat => cat.name === transaction.category) || CATEGORIES[CATEGORIES.length - 1];
+  const categoryData = getCategoryData(transaction.category, customCategories);
   
   const IconComponent = 
     categoryData.library === 'MaterialCommunityIcons' ? MaterialCommunityIcons :
@@ -139,13 +125,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 24,
     padding: 24,
     margin: 20,
     width: '85%',
     maxWidth: 400,
-    shadowColor: '#000',
+    shadowColor: colors.primaryDark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -165,7 +151,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -177,20 +163,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   incomeBadge: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: colors.incomeLight,
   },
   expenseBadge: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: colors.expenseLight,
   },
   typeBadgeText: {
     fontSize: 14,
     fontWeight: '600',
   },
   incomeText: {
-    color: '#16a34a',
+    color: colors.income,
   },
   expenseText: {
-    color: '#dc2626',
+    color: colors.expense,
   },
   amount: {
     fontSize: 42,
@@ -199,21 +185,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   incomeAmount: {
-    color: '#16a34a',
+    color: colors.income,
   },
   expenseAmount: {
-    color: '#dc2626',
+    color: colors.expense,
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 24,
   },
   divider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.divider,
     marginBottom: 20,
   },
   infoRow: {
@@ -224,7 +210,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 16,
-    color: '#999',
+    color: colors.textLight,
   },
   categoryContainer: {
     flexDirection: 'row',
@@ -241,6 +227,6 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: colors.text,
   },
 });

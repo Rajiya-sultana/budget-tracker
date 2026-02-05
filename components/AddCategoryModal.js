@@ -176,7 +176,7 @@ export default function AddCategoryModal({ visible, onClose, onSave }) {
           <TextInput
             style={styles.input}
             placeholder="Enter category name"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textLight}
             value={name}
             onChangeText={setName}
             autoCapitalize="words"
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   },
   typeContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
@@ -267,18 +267,20 @@ const styles = StyleSheet.create({
   typeButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: colors.textSecondary,
   },
   typeButtonTextActive: {
-    color: colors.white,
+    color: colors.textOnPurple,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
     color: colors.text,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   iconPreviewContainer: {
     flexDirection: 'row',
@@ -307,7 +309,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
   },
   cancelButtonText: {
@@ -323,11 +325,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: colors.gray,
   },
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.textOnPurple,
   },
 });
