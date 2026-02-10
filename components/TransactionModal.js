@@ -11,10 +11,10 @@ import {
 import { MaterialCommunityIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 import { getCategoryData } from './CategoryIcon';
-import { ExpenseContext } from '../context/ExpenseContext';
+import { TransactionContext } from '../context/TransactionContext';
 
 export default function TransactionModal({ visible, transaction, onClose, onDelete, onEdit }) {
-  const { customCategories } = useContext(ExpenseContext);
+  const { customCategories } = useContext(TransactionContext);
 
   if (!transaction) return null;
 

@@ -2,13 +2,13 @@ import React, { createContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format, subDays, subMonths } from "date-fns";
 
-const EXPENSES_STORAGE_KEY = "@budget_tracker_expenses";
+const TRANSACTIONS_STORAGE_KEY = "@budget_tracker_transactions";
 const CATEGORIES_STORAGE_KEY = "@budget_tracker_categories";
 
-export const ExpenseContext = createContext();
+export const TransactionContext = createContext();
 
-// Generate sample expenses across multiple months for demo
-const generateSampleExpenses = () => {
+// Generate sample transactions across multiple months for demo
+const generateSampleTransactions = () => {
   const now = new Date();
 
   return [
@@ -90,8 +90,8 @@ const generateSampleExpenses = () => {
   ];
 };
 
-export function ExpenseProvider({ children }) {
-  const [expenses, setExpenses] = useState([]);
+export function TransactionProvider({ children }) {
+  const [transactions, setTransactions] = useState([]);
   const [customCategories, setCustomCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -101,9 +101,9 @@ export function ExpenseProvider({ children }) {
 
   useEffect(() => {
     if (!isLoading) {
-      saveExpenses(expenses);
+      saveTransactions(transactions);
     }
-  }, [expenses, isLoading]);
+  }, [transactions, isLoading]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -113,22 +113,22 @@ export function ExpenseProvider({ children }) {
 
   const loadData = async () => {
     try {
-      const [storedExpenses, storedCategories] = await Promise.all([
-        AsyncStorage.getItem(EXPENSES_STORAGE_KEY),
+      const [storedTransactions, storedCategories] = await Promise.all([
+        AsyncStorage.getItem(TRANSACTIONS_STORAGE_KEY),
         AsyncStorage.getItem(CATEGORIES_STORAGE_KEY),
       ]);
 
-      if (storedExpenses !== null) {
-        const parsed = JSON.parse(storedExpenses);
+      if (storedTransactions !== null) {
+        const parsed = JSON.parse(storedTransactions);
         // Add timestamp to old transactions that don't have it
-        const withTimestamps = parsed.map((expense) => ({
-          ...expense,
-          timestamp: expense.timestamp || Date.now(),
+        const withTimestamps = parsed.map((transaction) => ({
+          ...transaction,
+          timestamp: transaction.timestamp || Date.now(),
         }));
-        setExpenses(withTimestamps);
+        setTransactions(withTimestamps);
       } else {
         // First time user - load sample data
-        setExpenses(generateSampleExpenses());
+        setTransactions(generateSampleTransactions());
       }
 
       if (storedCategories !== null) {
@@ -136,17 +136,17 @@ export function ExpenseProvider({ children }) {
       }
     } catch (error) {
       console.error("Error loading data:", error);
-      setExpenses(generateSampleExpenses());
+      setTransactions(generateSampleTransactions());
     } finally {
       setIsLoading(false);
     }
   };
 
-  const saveExpenses = async (expensesToSave) => {
+  const saveTransactions = async (transactionsToSave) => {
     try {
-      await AsyncStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(expensesToSave));
+      await AsyncStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(transactionsToSave));
     } catch (error) {
-      console.error("Error saving expenses:", error);
+      console.error("Error saving transactions:", error);
     }
   };
 
@@ -158,40 +158,43 @@ export function ExpenseProvider({ children }) {
     }
   };
 
-  const addExpense = (title, amount, type, category) => {
-    const now = new Date();
-    const newExpense = {
+  const addTransaction = (title, amount, type, category, selectedDate = null) => {
+    const transactionDate = selectedDate || new Date();
+    const newTransaction = {
       id: Date.now().toString(),
       title: title,
-      date: format(now, "d MMM, h:mm a"),
-      timestamp: now.getTime(),
+      date: format(transactionDate, "d MMM, h:mm a"),
+      timestamp: transactionDate.getTime(),
       amount: parseFloat(amount),
       type: type,
       category: category,
     };
-    setExpenses((prevExpenses) => [newExpense, ...prevExpenses]);
+    setTransactions((prevTransactions) => [newTransaction, ...prevTransactions]);
   };
 
-  const updateExpense = (id, title, amount, type, category) => {
-    setExpenses((prevExpenses) =>
-      prevExpenses.map((expense) =>
-        expense.id === id
-          ? {
-              ...expense,
-              title,
-              amount: parseFloat(amount),
-              type,
-              category,
-              date: format(new Date(), "d MMM, h:mm a"),
-            }
-          : expense
-      )
+  const updateTransaction = (id, title, amount, type, category, selectedDate = null) => {
+    setTransactions((prevTransactions) =>
+      prevTransactions.map((transaction) => {
+        if (transaction.id === id) {
+          const transactionDate = selectedDate || new Date(transaction.timestamp);
+          return {
+            ...transaction,
+            title,
+            amount: parseFloat(amount),
+            type,
+            category,
+            date: format(transactionDate, "d MMM, h:mm a"),
+            timestamp: transactionDate.getTime(),
+          };
+        }
+        return transaction;
+      })
     );
   };
 
-  const deleteExpense = (id) => {
-    setExpenses((prevExpenses) =>
-      prevExpenses.filter((expense) => expense.id !== id)
+  const deleteTransaction = (id) => {
+    setTransactions((prevTransactions) =>
+      prevTransactions.filter((transaction) => transaction.id !== id)
     );
   };
 
@@ -213,12 +216,12 @@ export function ExpenseProvider({ children }) {
   };
 
   return (
-    <ExpenseContext.Provider
+    <TransactionContext.Provider
       value={{
-        expenses,
-        addExpense,
-        updateExpense,
-        deleteExpense,
+        transactions,
+        addTransaction,
+        updateTransaction,
+        deleteTransaction,
         customCategories,
         addCategory,
         deleteCategory,
@@ -226,6 +229,6 @@ export function ExpenseProvider({ children }) {
       }}
     >
       {children}
-    </ExpenseContext.Provider>
+    </TransactionContext.Provider>
   );
 }

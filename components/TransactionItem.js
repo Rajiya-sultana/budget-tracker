@@ -7,18 +7,19 @@ import {
 } from "@expo/vector-icons";
 import { colors } from "../constants/colors";
 import { getCategoryData } from "./CategoryIcon";
-import { ExpenseContext } from "../context/ExpenseContext";
+import { TransactionContext } from "../context/TransactionContext";
 
-export default function ExpenseItem({
+export default function TransactionItem({
   id,
   title,
   date,
+  timestamp,
   amount,
   type,
   category,
   onPress,
 }) {
-  const { customCategories } = useContext(ExpenseContext);
+  const { customCategories } = useContext(TransactionContext);
 
   const categoryData = getCategoryData(category, customCategories);
 
@@ -32,7 +33,7 @@ export default function ExpenseItem({
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => onPress({ id, title, date, amount, type, category })}
+      onPress={() => onPress({ id, title, date, amount, type, category, timestamp })}
       activeOpacity={0.7}
     >
       <View

@@ -1,15 +1,17 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ExpenseProvider } from "./context/ExpenseContext";
+import { TransactionProvider } from "./context/TransactionContext";
 import TabNavigator from "./navigation/TabNavigator";
-import AddExpenseScreen from "./screens/AddExpenseScreen";
+import AddTransactionScreen from "./screens/AddTransactionScreen";
+
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  
   return (
-    <ExpenseProvider>
+    <TransactionProvider>
       <NavigationContainer>
         <Stack.Navigator
           screenOptions={{
@@ -18,14 +20,14 @@ export default function App() {
         >
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen
-            name="AddExpense"
-            component={AddExpenseScreen}
+            name="AddTransaction"
+            component={AddTransactionScreen}
             options={{
               presentation: "modal",
             }}
           />
         </Stack.Navigator>
       </NavigationContainer>
-    </ExpenseProvider>
+    </TransactionProvider>
   );
 }

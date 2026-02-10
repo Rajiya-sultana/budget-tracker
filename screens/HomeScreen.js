@@ -10,13 +10,13 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, isSameMonth, subYears, addYears } from "date-fns";
-import ExpenseItem from "../components/ExpenseItem";
+import TransactionItem from "../components/TransactionItem";
 import TransactionModal from "../components/TransactionModal";
 import { colors } from "../constants/colors";
-import { ExpenseContext } from "../context/ExpenseContext";
+import { TransactionContext } from "../context/TransactionContext";
 
 export default function HomeScreen({ navigation }) {
-  const { expenses, deleteExpense } = useContext(ExpenseContext);
+  const { transactions, deleteTransaction } = useContext(TransactionContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -25,21 +25,21 @@ export default function HomeScreen({ navigation }) {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
 
-  // Filter expenses for selected month
-  const filteredExpenses = useMemo(() => {
-    return expenses.filter((expense) => {
-      const expenseDate = new Date(expense.timestamp);
-      return expenseDate >= monthStart && expenseDate <= monthEnd;
+  // Filter transactions for selected month
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((transaction) => {
+      const transactionDate = new Date(transaction.timestamp);
+      return transactionDate >= monthStart && transactionDate <= monthEnd;
     });
-  }, [expenses, monthStart, monthEnd]);
+  }, [transactions, monthStart, monthEnd]);
 
-  // Calculate totals for filtered expenses
+  // Calculate totals for filtered transactions
   const { totalIncome, totalExpense, netBalance } = useMemo(() => {
-    const income = filteredExpenses
+    const income = filteredTransactions
       .filter((item) => item.type === "income")
       .reduce((sum, item) => sum + item.amount, 0);
 
-    const expense = filteredExpenses
+    const expense = filteredTransactions
       .filter((item) => item.type === "expense")
       .reduce((sum, item) => sum + item.amount, 0);
 
@@ -48,7 +48,7 @@ export default function HomeScreen({ navigation }) {
       totalExpense: expense,
       netBalance: income - expense,
     };
-  }, [filteredExpenses]);
+  }, [filteredTransactions]);
 
   // Allow going back and forward up to 12 months (1 year each way)
   const minDate = subYears(new Date(), 1);
@@ -80,14 +80,14 @@ export default function HomeScreen({ navigation }) {
 
   const handleDeleteFromModal = () => {
     if (selectedTransaction) {
-      deleteExpense(selectedTransaction.id);
+      deleteTransaction(selectedTransaction.id);
       handleCloseModal();
     }
   };
 
   const handleEditFromModal = () => {
     handleCloseModal();
-    navigation.navigate("AddExpense", {
+    navigation.navigate("AddTransaction", {
       editMode: true,
       transaction: selectedTransaction,
     });
@@ -166,18 +166,18 @@ export default function HomeScreen({ navigation }) {
         {/* Transactions Section */}
         <Text style={styles.sectionTitle}>Transactions</Text>
 
-        {filteredExpenses.length > 0 ? (
-          filteredExpenses.map((expense) => (
-            <ExpenseItem
-              key={expense.id}
-              {...expense}
+        {filteredTransactions.length > 0 ? (
+          filteredTransactions.map((transaction) => (
+            <TransactionItem
+              key={transaction.id}
+              {...transaction}
               onPress={handleTransactionPress}
             />
           ))
         ) : (
           <View style={styles.emptyContainer}>
             <Ionicons name="receipt-outline" size={48} color={colors.textLight} />
-            <Text style={styles.noExpenses}>
+            <Text style={styles.noTransactions}>
               No transactions in {format(selectedDate, "MMMM yyyy")}
             </Text>
           </View>
@@ -189,7 +189,7 @@ export default function HomeScreen({ navigation }) {
       {/* FAB Button */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate("AddExpense")}
+        onPress={() => navigation.navigate("AddTransaction")}
       >
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 40,
   },
-  noExpenses: {
+  noTransactions: {
     textAlign: "center",
     fontSize: 16,
     color: colors.textLight,

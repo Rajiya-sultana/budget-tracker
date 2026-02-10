@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useContext, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,24 +10,43 @@ import {
   StatusBar,
   Alert,
   ScrollView,
-} from 'react-native';
-import Button from '../components/Button';
-import CategoryIcon, { AddCategoryButton, getCategoriesByType } from '../components/CategoryIcon';
-import AddCategoryModal from '../components/AddCategoryModal';
-import { colors } from '../constants/colors';
-import { ExpenseContext } from '../context/ExpenseContext';
+} from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { format } from "date-fns";
+import Button from "../components/Button";
+import CategoryIcon, {
+  AddCategoryButton,
+  getCategoriesByType,
+} from "../components/CategoryIcon";
+import AddCategoryModal from "../components/AddCategoryModal";
+import { colors } from "../constants/colors";
+import { TransactionContext } from "../context/TransactionContext";
+import { Ionicons } from "@expo/vector-icons";
 
-export default function AddExpenseScreen({ navigation, route }) {
-  const { addExpense, updateExpense, customCategories, addCategory } = useContext(ExpenseContext);
+export default function AddTransactionScreen({ navigation, route }) {
+  const { addTransaction, updateTransaction, customCategories, addCategory } =
+    useContext(TransactionContext);
 
   // Check if we're in edit mode
   const editMode = route.params?.editMode || false;
   const transaction = route.params?.transaction || null;
 
-  const [amount, setAmount] = useState(editMode ? transaction.amount.toString() : '');
-  const [description, setDescription] = useState(editMode ? transaction.title : '');
-  const [selectedType, setSelectedType] = useState(editMode ? transaction.type : 'expense');
-  const [selectedCategory, setSelectedCategory] = useState(editMode ? transaction.category : '');
+  const [amount, setAmount] = useState(
+    editMode ? transaction.amount.toString() : "",
+  );
+  const [description, setDescription] = useState(
+    editMode ? transaction.title : "",
+  );
+  const [selectedType, setSelectedType] = useState(
+    editMode ? transaction.type : "expense",
+  );
+  const [selectedCategory, setSelectedCategory] = useState(
+    editMode ? transaction.category : "",
+  );
+  const [selectedDate, setSelectedDate] = useState(
+    editMode && transaction.timestamp ? new Date(transaction.timestamp) : new Date(),
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
 
   // Get filtered categories based on selected type
@@ -39,9 +58,11 @@ export default function AddExpenseScreen({ navigation, route }) {
   const handleTypeChange = (newType) => {
     setSelectedType(newType);
     const validCategories = getCategoriesByType(newType, customCategories);
-    const isCurrentCategoryValid = validCategories.some(cat => cat.name === selectedCategory);
+    const isCurrentCategoryValid = validCategories.some(
+      (cat) => cat.name === selectedCategory,
+    );
     if (!isCurrentCategoryValid) {
-      setSelectedCategory('');
+      setSelectedCategory("");
     }
   };
 
@@ -50,42 +71,68 @@ export default function AddExpenseScreen({ navigation, route }) {
     if (success) {
       // Auto-select the newly added category
       setSelectedCategory(newCategory.name);
-      Alert.alert('Success', `Category "${newCategory.name}" added successfully!`);
+      Alert.alert(
+        "Success",
+        `Category "${newCategory.name}" added successfully!`,
+      );
     } else {
-      Alert.alert('Error', 'A category with this name already exists.');
+      Alert.alert("Error", "A category with this name already exists.");
+    }
+  };
+
+  const handleDateChange = (event, date) => {
+    setShowDatePicker(false);
+    if (date) {
+      setSelectedDate(date);
     }
   };
 
   const handleSubmit = () => {
-    if (!amount || amount.trim() === '') {
-      Alert.alert('Error', 'Please enter an amount');
+    if (!amount || amount.trim() === "") {
+      Alert.alert("Error", "Please enter an amount");
       return;
     }
 
-    if (!description || description.trim() === '') {
-      Alert.alert('Error', 'Please enter a description');
+    if (!description || description.trim() === "") {
+      Alert.alert("Error", "Please enter a description");
       return;
     }
 
     if (!selectedCategory) {
-      Alert.alert('Error', 'Please select a category');
+      Alert.alert("Error", "Please select a category");
       return;
     }
 
     const amountValue = parseFloat(amount);
     if (isNaN(amountValue) || amountValue <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount');
+      Alert.alert("Error", "Please enter a valid amount");
       return;
     }
 
     if (editMode) {
       // Update existing transaction
-      updateExpense(transaction.id, description.trim(), amount, selectedType, selectedCategory);
-      Alert.alert('Success', 'Transaction updated successfully!');
+      updateTransaction(
+        transaction.id,
+        description.trim(),
+        amount,
+        selectedType,
+        selectedCategory,
+        selectedDate,
+      );
+      Alert.alert("Success", "Transaction updated successfully!");
     } else {
       // Add new transaction
-      addExpense(description.trim(), amount, selectedType, selectedCategory);
-      Alert.alert('Success', `${selectedType === 'income' ? 'Income' : 'Expense'} added successfully!`);
+      addTransaction(
+        description.trim(),
+        amount,
+        selectedType,
+        selectedCategory,
+        selectedDate,
+      );
+      Alert.alert(
+        "Success",
+        `${selectedType === "income" ? "Income" : "Expense"} added successfully!`,
+      );
     }
 
     navigation.goBack();
@@ -93,7 +140,7 @@ export default function AddExpenseScreen({ navigation, route }) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <StatusBar barStyle="dark-content" />
@@ -103,10 +150,10 @@ export default function AddExpenseScreen({ navigation, route }) {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backIcon}>←</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {editMode ? 'Edit Transaction' : 'Add Transaction'}
+          {editMode ? "Edit Transaction" : "Add Transaction"}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -122,14 +169,14 @@ export default function AddExpenseScreen({ navigation, route }) {
               style={[
                 styles.toggleButton,
                 styles.toggleLeft,
-                selectedType === 'expense' && styles.toggleActiveExpense,
+                selectedType === "expense" && styles.toggleActiveExpense,
               ]}
-              onPress={() => handleTypeChange('expense')}
+              onPress={() => handleTypeChange("expense")}
             >
               <Text
                 style={[
                   styles.toggleText,
-                  selectedType === 'expense' && styles.toggleTextActive,
+                  selectedType === "expense" && styles.toggleTextActive,
                 ]}
               >
                 Expense
@@ -139,14 +186,14 @@ export default function AddExpenseScreen({ navigation, route }) {
               style={[
                 styles.toggleButton,
                 styles.toggleRight,
-                selectedType === 'income' && styles.toggleActiveIncome,
+                selectedType === "income" && styles.toggleActiveIncome,
               ]}
-              onPress={() => handleTypeChange('income')}
+              onPress={() => handleTypeChange("income")}
             >
               <Text
                 style={[
                   styles.toggleText,
-                  selectedType === 'income' && styles.toggleTextActive,
+                  selectedType === "income" && styles.toggleTextActive,
                 ]}
               >
                 Income
@@ -175,6 +222,33 @@ export default function AddExpenseScreen({ navigation, route }) {
             multiline
           />
 
+          {/* Date Picker */}
+          <TouchableOpacity
+            style={styles.datePickerButton}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <View style={styles.datePickerLeft}>
+              <Ionicons name="calendar-outline" size={24} color={colors.primary} />
+              <View style={styles.datePickerTextContainer}>
+                <Text style={styles.datePickerLabel}>Date</Text>
+                <Text style={styles.datePickerValue}>
+                  {format(selectedDate, "EEEE, d MMMM yyyy")}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+            />
+          )}
+
           {/* Category Selection */}
           <Text style={styles.sectionTitle}>Select Category</Text>
           <View style={styles.categoriesContainer}>
@@ -196,7 +270,13 @@ export default function AddExpenseScreen({ navigation, route }) {
 
       <View style={styles.buttonContainer}>
         <Button
-          title={editMode ? 'Update Transaction' : (selectedType === 'income' ? 'Add Income' : 'Add Expense')}
+          title={
+            editMode
+              ? "Update Transaction"
+              : selectedType === "income"
+                ? "Add Income"
+                : "Add Expense"
+          }
           onPress={handleSubmit}
         />
       </View>
@@ -217,9 +297,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
@@ -230,8 +310,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
@@ -244,7 +324,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
   },
   scrollView: {
@@ -255,7 +335,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   toggleContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: colors.surface,
     borderRadius: 25,
     padding: 4,
@@ -269,8 +349,8 @@ const styles = StyleSheet.create({
   toggleButton: {
     flex: 1,
     paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 22,
   },
   toggleLeft: {
@@ -287,15 +367,15 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.textLight,
   },
   toggleTextActive: {
     color: colors.textOnPurple,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.surface,
     borderRadius: 16,
     paddingHorizontal: 20,
@@ -311,7 +391,7 @@ const styles = StyleSheet.create({
   },
   rupeeSymbol: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
     marginRight: 12,
   },
@@ -327,26 +407,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     minHeight: 100,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 2,
-    marginBottom: 24,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.border,
   },
+  datePickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  datePickerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  datePickerTextContainer: {
+    marginLeft: 12,
+  },
+  datePickerLabel: {
+    fontSize: 12,
+    color: colors.textLight,
+    marginBottom: 2,
+  },
+  datePickerValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+  },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
     marginBottom: 16,
   },
   categoriesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
   },
   buttonContainer: {
     paddingHorizontal: 20,

@@ -9,19 +9,19 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
-import { ExpenseContext } from '../context/ExpenseContext';
+import { TransactionContext } from '../context/TransactionContext';
 import TransactionModal from '../components/TransactionModal';
 import { useNavigation } from '@react-navigation/native';
 
 export default function TransactionsScreen() {
   const navigation = useNavigation();
-  const { expenses, deleteExpense } = useContext(ExpenseContext);
+  const { transactions, deleteTransaction } = useContext(TransactionContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'income', 'expense'
 
   // Filter transactions based on selected filter
-  const filteredTransactions = expenses.filter((item) => {
+  const filteredTransactions = transactions.filter((item) => {
     if (filter === 'all') return true;
     return item.type === filter;
   });
@@ -38,14 +38,14 @@ export default function TransactionsScreen() {
 
   const handleDeleteFromModal = () => {
     if (selectedTransaction) {
-      deleteExpense(selectedTransaction.id);
+      deleteTransaction(selectedTransaction.id);
       handleCloseModal();
     }
   };
 
   const handleEditFromModal = () => {
     handleCloseModal();
-    navigation.navigate('AddExpense', {
+    navigation.navigate('AddTransaction', {
       editMode: true,
       transaction: selectedTransaction,
     });
@@ -117,11 +117,20 @@ export default function TransactionsScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Transaction History</Text>
-        <Text style={styles.headerSubtitle}>
-          {filteredTransactions.length} transaction
-          {filteredTransactions.length !== 1 ? 's' : ''}
-        </Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Transaction History</Text>
+          <Text style={styles.headerSubtitle}>
+            {filteredTransactions.length} transaction
+            {filteredTransactions.length !== 1 ? 's' : ''}
+          </Text>
+        </View>
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Filter Buttons */}
@@ -159,13 +168,33 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 16,
     backgroundColor: colors.background,
   },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 4,
