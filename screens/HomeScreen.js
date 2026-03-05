@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  RefreshControl,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,7 +17,7 @@ import { colors } from "../constants/colors";
 import { TransactionContext } from "../context/TransactionContext";
 
 export default function HomeScreen({ navigation }) {
-  const { transactions, deleteTransaction } = useContext(TransactionContext);
+  const { transactions, deleteTransaction, isLoading, refresh } = useContext(TransactionContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -109,6 +110,9 @@ export default function HomeScreen({ navigation }) {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={refresh} colors={[colors.primary]} tintColor={colors.primary} />
+        }
       >
         {/* Header with App Name */}
         <Text style={styles.header}>Budget Tracker</Text>

@@ -245,7 +245,6 @@ export default function AddTransactionScreen({ navigation, route }) {
               mode="date"
               display={Platform.OS === "ios" ? "spinner" : "default"}
               onChange={handleDateChange}
-              maximumDate={new Date()}
             />
           )}
 

@@ -1,218 +1,160 @@
 import React, { createContext, useState, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { format, subDays, subMonths } from "date-fns";
-
-const TRANSACTIONS_STORAGE_KEY = "@budget_tracker_transactions";
-const CATEGORIES_STORAGE_KEY = "@budget_tracker_categories";
+import { format } from "date-fns";
+import { supabase } from "../lib/supabase";
 
 export const TransactionContext = createContext();
-
-// Generate sample transactions across multiple months for demo
-const generateSampleTransactions = () => {
-  const now = new Date();
-
-  return [
-    // Current month
-    {
-      id: "1",
-      title: "Groceries",
-      date: format(now, "d MMM, h:mm a"),
-      timestamp: now.getTime(),
-      amount: 200,
-      type: "expense",
-      category: "Groceries",
-    },
-    {
-      id: "2",
-      title: "Taxi",
-      date: format(subDays(now, 1), "d MMM, h:mm a"),
-      timestamp: subDays(now, 1).getTime(),
-      amount: 150,
-      type: "expense",
-      category: "Travel",
-    },
-    {
-      id: "3",
-      title: "Salary",
-      date: format(subDays(now, 3), "d MMM, h:mm a"),
-      timestamp: subDays(now, 3).getTime(),
-      amount: 50000,
-      type: "income",
-      category: "Salary",
-    },
-    // Last month
-    {
-      id: "4",
-      title: "Rent",
-      date: format(subMonths(now, 1), "d MMM, h:mm a"),
-      timestamp: subMonths(now, 1).getTime(),
-      amount: 15000,
-      type: "expense",
-      category: "Rent",
-    },
-    {
-      id: "5",
-      title: "Electricity Bill",
-      date: format(subMonths(now, 1), "d MMM, h:mm a"),
-      timestamp: subMonths(now, 1).getTime(),
-      amount: 2500,
-      type: "expense",
-      category: "Home",
-    },
-    {
-      id: "6",
-      title: "Last Month Salary",
-      date: format(subMonths(now, 1), "d MMM, h:mm a"),
-      timestamp: subMonths(now, 1).getTime(),
-      amount: 50000,
-      type: "income",
-      category: "Salary",
-    },
-    // 2 months ago
-    {
-      id: "7",
-      title: "Shopping",
-      date: format(subMonths(now, 2), "d MMM, h:mm a"),
-      timestamp: subMonths(now, 2).getTime(),
-      amount: 5000,
-      type: "expense",
-      category: "Shopping",
-    },
-    {
-      id: "8",
-      title: "Freelance Project",
-      date: format(subMonths(now, 2), "d MMM, h:mm a"),
-      timestamp: subMonths(now, 2).getTime(),
-      amount: 25000,
-      type: "income",
-      category: "Freelance",
-    },
-  ];
-};
 
 export function TransactionProvider({ children }) {
   const [transactions, setTransactions] = useState([]);
   const [customCategories, setCustomCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState(null);
 
+  // Track current user and reload data on auth change
   useEffect(() => {
-    loadData();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const uid = session?.user?.id ?? null;
+      setUserId(uid);
+      if (uid) loadData(uid);
+      else {
+        setTransactions([]);
+        setCustomCategories([]);
+        setIsLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id ?? null;
+      setUserId(uid);
+      if (uid) loadData(uid);
+      else {
+        setTransactions([]);
+        setCustomCategories([]);
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!isLoading) {
-      saveTransactions(transactions);
-    }
-  }, [transactions, isLoading]);
-
-  useEffect(() => {
-    if (!isLoading) {
-      saveCategories(customCategories);
-    }
-  }, [customCategories, isLoading]);
-
-  const loadData = async () => {
+  const loadData = async (uid) => {
+    setIsLoading(true);
     try {
-      const [storedTransactions, storedCategories] = await Promise.all([
-        AsyncStorage.getItem(TRANSACTIONS_STORAGE_KEY),
-        AsyncStorage.getItem(CATEGORIES_STORAGE_KEY),
-      ]);
+      const [{ data: txData, error: txError }, { data: catData, error: catError }] =
+        await Promise.all([
+          supabase
+            .from("transactions")
+            .select("*")
+            .eq("user_id", uid)
+            .order("timestamp", { ascending: false }),
+          supabase
+            .from("categories")
+            .select("*")
+            .eq("user_id", uid),
+        ]);
 
-      if (storedTransactions !== null) {
-        const parsed = JSON.parse(storedTransactions);
-        // Add timestamp to old transactions that don't have it
-        const withTimestamps = parsed.map((transaction) => ({
-          ...transaction,
-          timestamp: transaction.timestamp || Date.now(),
-        }));
-        setTransactions(withTimestamps);
-      } else {
-        // First time user - load sample data
-        setTransactions(generateSampleTransactions());
-      }
+      if (txError) throw txError;
+      if (catError) throw catError;
 
-      if (storedCategories !== null) {
-        setCustomCategories(JSON.parse(storedCategories));
-      }
+      setTransactions(txData ?? []);
+      setCustomCategories(
+        (catData ?? []).map((c) => ({ name: c.name, icon: c.icon, color: c.color }))
+      );
     } catch (error) {
-      console.error("Error loading data:", error);
-      setTransactions(generateSampleTransactions());
+      console.error("Error loading data:", error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const saveTransactions = async (transactionsToSave) => {
-    try {
-      await AsyncStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(transactionsToSave));
-    } catch (error) {
-      console.error("Error saving transactions:", error);
-    }
-  };
-
-  const saveCategories = async (categoriesToSave) => {
-    try {
-      await AsyncStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categoriesToSave));
-    } catch (error) {
-      console.error("Error saving categories:", error);
-    }
-  };
-
-  const addTransaction = (title, amount, type, category, selectedDate = null) => {
+  const addTransaction = async (title, amount, type, category, selectedDate = null) => {
+    if (!userId) return;
     const transactionDate = selectedDate || new Date();
     const newTransaction = {
-      id: Date.now().toString(),
-      title: title,
-      date: format(transactionDate, "d MMM, h:mm a"),
-      timestamp: transactionDate.getTime(),
+      user_id: userId,
+      title,
       amount: parseFloat(amount),
-      type: type,
-      category: category,
+      type,
+      category,
+      timestamp: transactionDate.getTime(),
+      date: format(transactionDate, "d MMM, h:mm a"),
     };
-    setTransactions((prevTransactions) => [newTransaction, ...prevTransactions]);
+
+    const { data, error } = await supabase
+      .from("transactions")
+      .insert(newTransaction)
+      .select()
+      .single();
+
+    if (error) { console.error("Error adding transaction:", error.message); return; }
+    setTransactions((prev) => [data, ...prev]);
   };
 
-  const updateTransaction = (id, title, amount, type, category, selectedDate = null) => {
-    setTransactions((prevTransactions) =>
-      prevTransactions.map((transaction) => {
-        if (transaction.id === id) {
-          const transactionDate = selectedDate || new Date(transaction.timestamp);
-          return {
-            ...transaction,
-            title,
-            amount: parseFloat(amount),
-            type,
-            category,
-            date: format(transactionDate, "d MMM, h:mm a"),
-            timestamp: transactionDate.getTime(),
-          };
-        }
-        return transaction;
-      })
-    );
+  const updateTransaction = async (id, title, amount, type, category, selectedDate = null) => {
+    const existing = transactions.find((t) => t.id === id);
+    if (!existing) return;
+
+    const transactionDate = selectedDate || new Date(existing.timestamp);
+    const updated = {
+      title,
+      amount: parseFloat(amount),
+      type,
+      category,
+      timestamp: transactionDate.getTime(),
+      date: format(transactionDate, "d MMM, h:mm a"),
+    };
+
+    const { data, error } = await supabase
+      .from("transactions")
+      .update(updated)
+      .eq("id", id)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) { console.error("Error updating transaction:", error.message); return; }
+    setTransactions((prev) => prev.map((t) => (t.id === id ? data : t)));
   };
 
-  const deleteTransaction = (id) => {
-    setTransactions((prevTransactions) =>
-      prevTransactions.filter((transaction) => transaction.id !== id)
-    );
+  const deleteTransaction = async (id) => {
+    const { error } = await supabase
+      .from("transactions")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (error) { console.error("Error deleting transaction:", error.message); return; }
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const addCategory = (newCategory) => {
+  const addCategory = async (newCategory) => {
     const exists = customCategories.some(
       (cat) => cat.name.toLowerCase() === newCategory.name.toLowerCase()
     );
-    if (!exists) {
-      setCustomCategories((prevCategories) => [...prevCategories, newCategory]);
-      return true;
-    }
-    return false;
+    if (exists) return false;
+
+    const { error } = await supabase
+      .from("categories")
+      .insert({ user_id: userId, name: newCategory.name, icon: newCategory.icon, color: newCategory.color, type: newCategory.type });
+
+    if (error) { console.error("Error adding category:", error.message); return false; }
+    setCustomCategories((prev) => [...prev, newCategory]);
+    return true;
   };
 
-  const deleteCategory = (categoryName) => {
-    setCustomCategories((prevCategories) =>
-      prevCategories.filter((cat) => cat.name !== categoryName)
-    );
+  const deleteCategory = async (categoryName) => {
+    const { error } = await supabase
+      .from("categories")
+      .delete()
+      .eq("user_id", userId)
+      .eq("name", categoryName);
+
+    if (error) { console.error("Error deleting category:", error.message); return; }
+    setCustomCategories((prev) => prev.filter((cat) => cat.name !== categoryName));
+  };
+
+  const refresh = () => {
+    if (userId) loadData(userId);
   };
 
   return (
@@ -226,6 +168,7 @@ export function TransactionProvider({ children }) {
         addCategory,
         deleteCategory,
         isLoading,
+        refresh,
       }}
     >
       {children}

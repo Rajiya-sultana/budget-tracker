@@ -14,7 +14,9 @@ import { useNavigation } from "@react-navigation/native";
 import {
   format,
   subMonths,
+  addMonths,
   subWeeks,
+  addWeeks,
   subYears,
   startOfMonth,
   endOfMonth,
@@ -56,31 +58,31 @@ export default function AnalyticsScreen() {
     }).start();
   }, []);
 
-  // Calculate date range based on selected period
+  // Calculate date range based on selected period (symmetric: same duration back and forward)
   const dateRange = useMemo(() => {
     const now = new Date();
     const period = PERIODS.find((p) => p.value === selectedPeriod);
-    let startDate;
+    let startDate, endDate;
 
     if (period.weeks > 0) {
       startDate = subWeeks(now, period.weeks);
+      endDate = addWeeks(now, period.weeks);
     } else if (period.months > 0) {
       startDate = subMonths(now, period.months);
+      endDate = addMonths(now, period.months);
     } else {
       startDate = subYears(now, 1);
+      endDate = addMonths(now, 12);
     }
 
-    return { startDate, endDate: now };
+    return { startDate, endDate };
   }, [selectedPeriod]);
 
   // Filter transactions by selected period
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
-      const transactionDate = new Date(t.timestamp);
-      return isWithinInterval(transactionDate, {
-        start: dateRange.startDate,
-        end: dateRange.endDate,
-      });
+      const d = new Date(t.timestamp);
+      return d >= dateRange.startDate && d <= dateRange.endDate;
     });
   }, [transactions, dateRange]);
 
@@ -97,7 +99,8 @@ export default function AnalyticsScreen() {
 
   // Calculate totals for previous period (for percentage change)
   const previousTotals = useMemo(() => {
-    const periodDays = differenceInDays(dateRange.endDate, dateRange.startDate);
+    const now = new Date();
+    const periodDays = differenceInDays(now, dateRange.startDate);
     const prevStart = subMonths(dateRange.startDate, Math.ceil(periodDays / 30));
     const prevEnd = dateRange.startDate;
 
@@ -132,41 +135,40 @@ export default function AnalyticsScreen() {
     };
   }, [currentTotals, previousTotals]);
 
-  // Generate chart data for months
+  // Generate chart data for months (includes future months within dateRange)
   const chartData = useMemo(() => {
-    const months = [];
     const now = new Date();
-    const numMonths = selectedPeriod === "1W" ? 1 : selectedPeriod === "1M" ? 1 : selectedPeriod === "3M" ? 3 : selectedPeriod === "6M" ? 6 : 12;
+    const numPastMonths = selectedPeriod === "1W" ? 1 : selectedPeriod === "1M" ? 1 : selectedPeriod === "3M" ? 3 : selectedPeriod === "6M" ? 6 : 12;
 
-    for (let i = numMonths - 1; i >= 0; i--) {
-      const monthDate = subMonths(now, i);
-      const monthStart = startOfMonth(monthDate);
-      const monthEnd = endOfMonth(monthDate);
+    // Collect all month keys within the dateRange that have transactions
+    const currentMonthKey = format(now, "yyyy-MM");
+    const monthKeys = new Set();
 
-      const monthTransactions = transactions.filter((t) => {
-        const transactionDate = new Date(t.timestamp);
-        return isWithinInterval(transactionDate, {
-          start: monthStart,
-          end: monthEnd,
-        });
-      });
-
-      const income = monthTransactions
-        .filter((t) => t.type === "income")
-        .reduce((sum, t) => sum + t.amount, 0);
-      const expense = monthTransactions
-        .filter((t) => t.type === "expense")
-        .reduce((sum, t) => sum + t.amount, 0);
-
-      months.push({
-        month: format(monthDate, "MMM"),
-        income,
-        expense,
-      });
+    // Always include past/current months
+    for (let i = numPastMonths - 1; i >= 0; i--) {
+      monthKeys.add(format(subMonths(now, i), "yyyy-MM"));
     }
 
-    return months;
-  }, [transactions, selectedPeriod]);
+    // Add future months within dateRange.endDate that have transactions
+    transactions.forEach((t) => {
+      const d = new Date(t.timestamp);
+      if (d > now && d <= dateRange.endDate) {
+        monthKeys.add(format(d, "yyyy-MM"));
+      }
+    });
+
+    return [...monthKeys].sort().map((key) => {
+      const monthDate = new Date(key + "-01");
+      const monthStart = startOfMonth(monthDate);
+      const monthEnd = endOfMonth(monthDate);
+      const monthTransactions = transactions.filter((t) =>
+        isWithinInterval(new Date(t.timestamp), { start: monthStart, end: monthEnd })
+      );
+      const income = monthTransactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
+      const expense = monthTransactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
+      return { month: format(monthDate, "MMM"), income, expense };
+    });
+  }, [transactions, selectedPeriod, dateRange]);
 
   // Get max value for chart scaling
   const maxChartValue = useMemo(() => {
