@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { TransactionProvider } from "./context/TransactionContext";
@@ -24,8 +25,14 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Still checking auth state
-  if (session === undefined) return null;
+  // Still checking auth state — show a spinner instead of blank screen
+  if (session === undefined) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#8b5cf6" />
+      </View>
+    );
+  }
 
   // Not logged in
   if (!session) return <LoginScreen />;
@@ -51,3 +58,12 @@ export default function App() {
     </TransactionProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f7ff",
+  },
+});

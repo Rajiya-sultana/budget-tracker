@@ -22,17 +22,17 @@ export default function HomeScreen({ navigation }) {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Get month start and end for filtering
-  const monthStart = startOfMonth(selectedDate);
-  const monthEnd = endOfMonth(selectedDate);
-
   // Filter transactions for selected month
+  // monthStart/monthEnd are derived inside useMemo from selectedDate to ensure
+  // comparisons use consistent local-time boundaries (avoids stale Date references)
   const filteredTransactions = useMemo(() => {
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
     return transactions.filter((transaction) => {
       const transactionDate = new Date(transaction.timestamp);
       return transactionDate >= monthStart && transactionDate <= monthEnd;
     });
-  }, [transactions, monthStart, monthEnd]);
+  }, [transactions, selectedDate]);
 
   // Calculate totals for filtered transactions
   const { totalIncome, totalExpense, netBalance } = useMemo(() => {

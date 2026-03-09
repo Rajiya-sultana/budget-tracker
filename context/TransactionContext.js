@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
+import { Alert } from "react-native";
 import { format } from "date-fns";
 import { supabase } from "../lib/supabase";
 
@@ -61,7 +62,7 @@ export function TransactionProvider({ children }) {
         (catData ?? []).map((c) => ({ name: c.name, icon: c.icon, color: c.color }))
       );
     } catch (error) {
-      console.error("Error loading data:", error.message);
+      Alert.alert("Error", "Failed to load data. Please pull down to refresh.");
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +87,7 @@ export function TransactionProvider({ children }) {
       .select()
       .single();
 
-    if (error) { console.error("Error adding transaction:", error.message); return; }
+    if (error) { Alert.alert("Error", "Failed to add transaction. Please try again."); return; }
     setTransactions((prev) => [data, ...prev]);
   };
 
@@ -112,7 +113,7 @@ export function TransactionProvider({ children }) {
       .select()
       .single();
 
-    if (error) { console.error("Error updating transaction:", error.message); return; }
+    if (error) { Alert.alert("Error", "Failed to update transaction. Please try again."); return; }
     setTransactions((prev) => prev.map((t) => (t.id === id ? data : t)));
   };
 
@@ -123,7 +124,7 @@ export function TransactionProvider({ children }) {
       .eq("id", id)
       .eq("user_id", userId);
 
-    if (error) { console.error("Error deleting transaction:", error.message); return; }
+    if (error) { Alert.alert("Error", "Failed to delete transaction. Please try again."); return; }
     setTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
@@ -137,20 +138,33 @@ export function TransactionProvider({ children }) {
       .from("categories")
       .insert({ user_id: userId, name: newCategory.name, icon: newCategory.icon, color: newCategory.color, type: newCategory.type });
 
-    if (error) { console.error("Error adding category:", error.message); return false; }
+    if (error) { Alert.alert("Error", "Failed to add category. Please try again."); return false; }
     setCustomCategories((prev) => [...prev, newCategory]);
     return true;
   };
 
   const deleteCategory = async (categoryName) => {
+    // Re-assign any transactions using this category to "Uncategorized"
+    const { error: txError } = await supabase
+      .from("transactions")
+      .update({ category: "Uncategorized" })
+      .eq("user_id", userId)
+      .eq("category", categoryName);
+
+    if (txError) { Alert.alert("Error", "Failed to delete category. Please try again."); return; }
+
     const { error } = await supabase
       .from("categories")
       .delete()
       .eq("user_id", userId)
       .eq("name", categoryName);
 
-    if (error) { console.error("Error deleting category:", error.message); return; }
+    if (error) { Alert.alert("Error", "Failed to delete category. Please try again."); return; }
+
     setCustomCategories((prev) => prev.filter((cat) => cat.name !== categoryName));
+    setTransactions((prev) =>
+      prev.map((t) => t.category === categoryName ? { ...t, category: "Uncategorized" } : t)
+    );
   };
 
   const refresh = () => {
