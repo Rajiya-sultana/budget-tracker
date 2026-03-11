@@ -12,8 +12,12 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from '../lib/supabase';
 import { colors } from '../constants/colors';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
@@ -22,6 +26,27 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  async function handleGoogleLogin() {
+    setLoading(true);
+    try {
+      const redirectTo = makeRedirectUri({ scheme: 'budgettracker' });
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo, skipBrowserRedirect: true },
+      });
+      if (error) throw error;
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type === 'success' && result.url) {
+        await supabase.auth.exchangeCodeForSession(result.url);
+      }
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit() {
     if (mode === 'signup' && !name.trim()) {
@@ -133,6 +158,21 @@ export default function LoginScreen() {
           )}
         </TouchableOpacity>
 
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <TouchableOpacity
+          style={styles.googleButton}
+          onPress={handleGoogleLogin}
+          disabled={loading}
+        >
+          <Ionicons name="logo-google" size={20} color="#4285F4" />
+          <Text style={styles.googleButtonText}>Continue with Google</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.switchButton}
           onPress={() => {
@@ -229,6 +269,37 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 13,
+    color: colors.textLight,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    height: 52,
+    marginBottom: 8,
+  },
+  googleButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
   },
   switchButton: {
     alignItems: 'center',
