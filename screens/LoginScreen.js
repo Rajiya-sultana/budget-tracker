@@ -31,15 +31,39 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const redirectTo = makeRedirectUri({ scheme: 'budgettracker' });
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo, skipBrowserRedirect: true },
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+          queryParams: { prompt: 'select_account' },
+        },
       });
       if (error) throw error;
 
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
       if (result.type === 'success' && result.url) {
-        await supabase.auth.exchangeCodeForSession(result.url);
+        // Implicit flow: tokens are in the URL hash or query string
+        const urlStr = result.url;
+        const hashIndex = urlStr.indexOf('#');
+        const queryIndex = urlStr.indexOf('?');
+        const paramStr = hashIndex !== -1
+          ? urlStr.substring(hashIndex + 1)
+          : queryIndex !== -1 ? urlStr.substring(queryIndex + 1) : '';
+
+        const params = new URLSearchParams(paramStr);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (!accessToken) throw new Error('No access token in redirect URL');
+
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        });
+        if (sessionError) throw sessionError;
       }
     } catch (error) {
       Alert.alert('Error', error.message);
